@@ -1,0 +1,86 @@
+! pip install -q kaggle
+
+from google.colab import files
+
+files.upload()
+
+
+ ! mkdir ~/.kaggle
+! cp kaggle.json ~/.kaggle/
+
+
+! chmod 600 ~/.kaggle/kaggle.json
+
+!kaggle datasets download -d arshid/iris-flower-dataset
+
+import zipfile
+zip_ref = zipfile.ZipFile('/content/iris-flower-dataset.zip')
+zip_ref.extractall('/content')
+zip_ref.close()
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.express as px
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, classification_report
+
+
+
+
+iris_data=pd.read_csv("/content/IRIS.csv")
+
+iris_data.head(5)
+
+iris_data.ndim
+
+iris_data.shape
+
+iris_data.size
+
+iris_data.info()
+
+iris_data.describe()
+
+iris_data.isnull().sum()
+
+iris_data['species'].value_counts()
+
+iris_data.columns
+
+X = iris_data[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']]
+y = iris_data['species']
+
+iris_data.isna().any()
+
+iris_data.isna().sum()
+
+sns.histplot(data=iris_data,x='sepal_length',hue='species').set(title='Sepal Length Histogram')
+
+sns.histplot(data=iris_data,x='sepal_width',hue='species').set(title='Sepal Width Histogram')
+
+sns.histplot(data=iris_data,x='petal_length',hue='species').set(title='Petal Length Histogram')
+
+sns.histplot(data=iris_data,x='petal_width',hue='species').set(title='Petal Width Histogram')
+
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+knn = KNeighborsClassifier(n_neighbors=3)
+knn.fit(X_train, y_train)
+
+y_pred = knn.predict(X_test)
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
