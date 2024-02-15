@@ -1,0 +1,107 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.preprocessing import LabelEncoder
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+# Load the dataset
+data = pd.read_csv('/Titanic-Dataset.csv')
+
+
+# Preprocess the data
+data['Sex'] = data['Sex'].map({'male': 0, 'female': 1})
+data['Age'].fillna(data['Age'].median(), inplace=True)
+data['Embarked'].fillna(data['Embarked'].mode()[0], inplace=True)
+data['Embarked'] = data['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
+data['Fare'].fillna(data['Fare'].median(), inplace=True)
+
+# Feature Engineering
+data['FamilySize'] = data['SibSp'] + data['Parch'] + 1
+data['IsAlone'] = 1
+data['IsAlone'].loc[data['FamilySize'] > 1] = 0
+data['Title'] = data['Name'].str.split(", ", expand=True)[1].str.split(".", expand=True)[0]
+title_names = (data['Title'].value_counts() < 10)
+data['Title'] = data['Title'].apply(lambda x: 'Misc' if title_names.loc[x] == True else x)
+data.drop(['Cabin', 'Ticket', 'Name'], axis=1, inplace=True)
+
+# Label Encoding
+label = LabelEncoder()
+data['Title'] = label.fit_transform(data['Title'])
+
+# Split the data into features and target
+features = ['PassengerId', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked', 'FamilySize', 'IsAlone', 'Title']
+X = data[features]
+y = data['Survived']
+
+# Split the data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a random forest classifier
+clf = RandomForestClassifier(n_estimators=100)
+
+# Train the classifier
+clf.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred_test = clf.predict(X_test)
+
+# Calculate accuracy, precision, recall, and F1 score for the test set
+accuracy_test = accuracy_score(y_test, y_pred_test)
+precision_test = precision_score(y_test, y_pred_test)
+recall_test = recall_score(y_test, y_pred_test)
+f1_test = f1_score(y_test, y_pred_test)
+
+print(f'Test Set Evaluation Metrics:')
+print(f'Accuracy: {accuracy_test}')
+print(f'Precision: {precision_test}')
+print(f'Recall: {recall_test}')
+print(f'F1 Score: {f1_test}')
+
+
+# Make predictions on the entire dataset
+y_pred_all = clf.predict(X)
+
+# Calculate accuracy, precision, recall, and F1 score for the entire dataset
+accuracy_all = accuracy_score(y, y_pred_all)
+precision_all = precision_score(y, y_pred_all)
+recall_all = recall_score(y, y_pred_all)
+f1_all = f1_score(y, y_pred_all)
+
+print(f'\nEntire Dataset Evaluation Metrics:')
+print(f'Accuracy: {accuracy_all}')
+print(f'Precision: {precision_all}')
+print(f'Recall: {recall_all}')
+print(f'F1 Score: {f1_all}')
+
+# Create a DataFrame with the actual and predicted values for the entire dataset
+final_titanic_all = pd.DataFrame({'Actual': y, 'Predicted': y_pred_all})
+
+# Define a function to determine if the prediction was correct
+def prediction(row):
+    if row['Actual'] == row['Predicted']:
+        return 'Correct Prediction'
+    else:
+        return 'Incorrect Prediction'
+
+# Apply the function to create a new column in the DataFrame
+final_titanic_all['Prediction'] = final_titanic_all.apply(prediction, axis=1)
+
+# Check the prediction count for the entire dataset
+prediction_count_all = final_titanic_all['Prediction'].value_counts()
+
+# Print the number of correct and incorrect predictions
+num_correct_predictions = prediction_count_all['Correct Prediction']
+num_incorrect_predictions = prediction_count_all['Incorrect Prediction']
+print(f'\nNumber of correct predictions: {num_correct_predictions}')
+print(f'Number of incorrect predictions: {num_incorrect_predictions}')
+
+# Plot the prediction count
+prediction_count_all.plot(kind='bar', color=['skyblue', 'red'])
+plt.title('Prediction Count for Entire Dataset')
+plt.xlabel('Prediction')
+plt.ylabel('Count')
+plt.show()
